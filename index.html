@@ -102,7 +102,6 @@
         }
         
         .stats {
-            display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 15px;
             margin-top: 15px;
@@ -393,17 +392,8 @@
                     <div class="stat-label">Total Distance</div>
                     <div class="stat-value">${totalDistance.toFixed(2)} mi</div>
                 </div>
-                <div class="stat-item">
-                    <div class="stat-label">Mile Markers</div>
-                    <div class="stat-value">${markers.length}</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-label">Track Points</div>
-                    <div class="stat-value">${routeData.points.length}</div>
-                </div>
             `;
             
-            infoPanel.style.display = 'block';
         }
         
         // Show error
@@ -455,7 +445,6 @@
             
             routeData = { points, distances, totalDistance, markers };
             updateRoute();
-            displayStats(totalDistance, markers);
         }
         
         // Update route with current start time
@@ -467,7 +456,7 @@
             const paceMin = document.getElementById('paceMin').value;
             const paceSec = document.getElementById('paceSec').value
             const pace = parseInt(paceMin) + parseInt(paceSec) / 60;
-	    console.log(pace)
+            console.log(pace)
 
             const params = new URLSearchParams(window.location.search);
             params.set("startTime", startTime);
@@ -483,6 +472,25 @@
             );
             
             displayRoute(routeData.points, markersWithTimes);
+            updateTable(routeData.totalDistance, markersWithTimes);
+        }
+
+        function updateTable(totalDistance, markers) {
+            const infoPanel = document.getElementById('infoPanel');
+            infoPanel.style.display = 'block';
+                const rows = markers.map(m => {
+                  return `<tr><td>Mile ${m.distance}</td><td>${m.eta}</td></tr>`
+                })
+                const table = `<table>${rows.join("")}</table>`
+                const contents = `<div class="stat-item">
+                    <div class="stat-label">Total Distance</div>
+                    <div class="stat-value">${totalDistance.toFixed(2)} mi</div>
+                </div>
+                <div>
+                ${table}
+                </div>
+                `
+                document.getElementById("stats").innerHTML = contents;
         }
         
         // Event listeners
