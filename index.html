@@ -466,7 +466,8 @@
             const startTime = document.getElementById('startTime').value;
             const paceMin = document.getElementById('paceMin').value;
             const paceSec = document.getElementById('paceSec').value
-            const pace = paceMin + paceSec / 60;
+            const pace = parseInt(paceMin) + parseInt(paceSec) / 60;
+	    console.log(pace)
 
             const params = new URLSearchParams(window.location.search);
             params.set("startTime", startTime);
