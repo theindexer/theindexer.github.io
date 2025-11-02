@@ -58,7 +58,7 @@
         
         input[type="file"],
         input[type="number"],
-        input[type="datetime-local"] {
+        input[type="time"] {
             padding: 8px 12px;
             border: 2px solid #ddd;
             border-radius: 6px;
@@ -67,12 +67,12 @@
         
         input[type="file"]:focus,
         input[type="number"]:focus,
-        input[type="datetime-local"]:focus {
+        input[type="time"]:focus {
             outline: none;
             border-color: #4CAF50;
         }
         
-	 .pace-input-group {
+         .pace-input-group {
             display: flex;
             gap: 8px;
             align-items: center;
@@ -158,7 +158,7 @@
 <body>
     <div class="container">
         <h1>📍 GPX Route Tracker with Mile Markers</h1>
-	<h3><a href="https://www.strava.com/routes/3415037923880174342">TCS NYC Marathon 2025</a></h3>
+        <h3><a href="https://www.strava.com/routes/3415037923880174342">TCS NYC Marathon 2025</a></h3>
         
         <div class="controls">
             <div class="control-group">
@@ -168,13 +168,15 @@
                 </div>
                 <div class="control-item">
                     <label for="startTime">Start Time:</label>
-                    <input type="datetime-local" id="startTime" />
+                    <input type="time" id="startTime" />
                 </div>
                 <div class="control-item">
                     <label for="pace">Pace:</label>
-		    <div class="pace-input-group">
-                        <input type="number" id="pace" min="1" max="60" step="0.1" value="20.0" />
-                        <span id="paceUnit">min/mi</span>
+        	    <div class="pace-input-group">
+                        <input type="number" id="paceMin" min="1" max="60" step="1" value="10" />
+                        <span id="paceUnit">min</span>
+                        <input type="number" id="paceSec" min="0" max="59" step="1" value="0" />
+                        <span id="paceUnit">sec / mile</span>
                     </div>
                 </div>
             </div>
@@ -191,6 +193,20 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
     <script>
+        const params = new URLSearchParams(window.location.search);
+        const paceMinParam = params.get("paceMin");
+        const paceSecParam = params.get("paceSec");
+        const startParam = params.get("startTime");
+        if (paceMinParam) {
+          document.getElementById('paceMin').value = paceMinParam;
+        }
+        if (paceSecParam) {
+          document.getElementById('paceSec').value = paceSecParam;
+        }
+        if (startParam) {
+	  document.getElementById("startTime").value = startParam;
+        }
+
         let map;
         let routeLayer;
         let markersLayer;
@@ -290,8 +306,8 @@
         function calculateEstimatedTimes(markers, totalDistance, startTime, pace) {
             if (!startTime) return markers;
             
-            const start = new Date(startTime);
-	const avgSpeed = 1 / pace * 60
+        const start = new Date(`1970-01-01T${startTime}:00`);
+        const avgSpeed = 1 / pace * 60
             
             return markers.map(marker => {
                 const hoursToMarker = marker.distance / avgSpeed;
@@ -342,7 +358,6 @@
                 const popupContent = `
                     <div class="marker-popup">
                         <h3>Mile ${marker.mile}</h3>
-                        <p><strong>Distance:</strong> ${marker.distance.toFixed(2)} mi</p>
                         ${marker.eta ? `<p><strong>ETA:</strong> ${marker.eta}</p>` : ''}
                     </div>
                 `;
@@ -429,14 +444,24 @@
         // Update route with current start time
         function updateRoute() {
             if (!routeData) return;
+	    
             
             const startTime = document.getElementById('startTime').value;
-            const pace = document.getElementById('pace').value;
+	    const paceMin = document.getElementById('paceMin').value;
+	    const paceSec = document.getElementById('paceSec').value
+            const pace = paceMin + paceSec / 60;
+
+	    const params = new URLSearchParams(window.location.search);
+	    params.set("startTime", startTime);
+	    params.set("paceMin", paceMin);
+	    params.set("paceSec", paceSec);
+	    const newUrl = `${window.location.pathname}?${params.toString()}`;
+	    window.history.replaceState({}, '', newUrl);
             const markersWithTimes = calculateEstimatedTimes(
                 routeData.markers, 
                 routeData.totalDistance, 
                 startTime,
-		pace
+        	pace
             );
             
             displayRoute(routeData.points, markersWithTimes);
@@ -450,15 +475,11 @@
         });
         
         document.getElementById('startTime').addEventListener('change', updateRoute);
-        document.getElementById('pace').addEventListener('change', updateRoute);
+        document.getElementById('paceMin').addEventListener('change', updateRoute);
+        document.getElementById('paceSec').addEventListener('change', updateRoute);
         
         // Initialize
         initMap();
-        
-        // Set default start time to now
-        const now = new Date();
-        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-        document.getElementById('startTime').value = now.toISOString().slice(0, 16);
     </script>
 </body>
 </html>
