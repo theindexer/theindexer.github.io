@@ -172,7 +172,7 @@
                 </div>
                 <div class="control-item">
                     <label for="pace">Pace:</label>
-        	    <div class="pace-input-group">
+                    <div class="pace-input-group">
                         <input type="number" id="paceMin" min="1" max="60" step="1" value="10" />
                         <span id="paceUnit">min</span>
                         <input type="number" id="paceSec" min="0" max="59" step="1" value="0" />
@@ -204,7 +204,7 @@
           document.getElementById('paceSec').value = paceSecParam;
         }
         if (startParam) {
-	  document.getElementById("startTime").value = startParam;
+          document.getElementById("startTime").value = startParam;
         }
 
         let map;
@@ -415,6 +415,19 @@
                 errorDiv.style.display = 'none';
             }, 5000);
         }
+        fetch('./routes/blue.gpx')
+         .then(response => {
+           if (!response.ok) {
+             throw new Error(`HTTP error! status: ${response.status}`);
+           }
+           return response.text(); // For text files like GPX
+         })
+         .then(data => {
+           handleGpx(data);
+         })
+         .catch(error => {
+           console.error('Error fetching file:', error);
+         });
         
         // Process GPX file
         function processGPXFile(file) {
@@ -422,15 +435,9 @@
             
             reader.onload = function(e) {
                 try {
-                    const points = parseGPX(e.target.result);
-                    const { distances, totalDistance } = calculateCumulativeDistances(points);
-                    const markers = findMileMarkers(points, distances, totalDistance);
-                    
-                    routeData = { points, distances, totalDistance, markers };
-                    updateRoute();
-                    displayStats(totalDistance, markers);
+                  handleGpx(e.target.result);
                 } catch (error) {
-                    showError('Error parsing GPX file: ' + error.message);
+                  showError('Error parsing GPX file: ' + error.message);
                 }
             };
             
@@ -440,28 +447,38 @@
             
             reader.readAsText(file);
         }
+
+        function handleGpx(gpx) {
+            const points = parseGPX(gpx);
+            const { distances, totalDistance } = calculateCumulativeDistances(points);
+            const markers = findMileMarkers(points, distances, totalDistance);
+            
+            routeData = { points, distances, totalDistance, markers };
+            updateRoute();
+            displayStats(totalDistance, markers);
+        }
         
         // Update route with current start time
         function updateRoute() {
             if (!routeData) return;
-	    
+            
             
             const startTime = document.getElementById('startTime').value;
-	    const paceMin = document.getElementById('paceMin').value;
-	    const paceSec = document.getElementById('paceSec').value
+            const paceMin = document.getElementById('paceMin').value;
+            const paceSec = document.getElementById('paceSec').value
             const pace = paceMin + paceSec / 60;
 
-	    const params = new URLSearchParams(window.location.search);
-	    params.set("startTime", startTime);
-	    params.set("paceMin", paceMin);
-	    params.set("paceSec", paceSec);
-	    const newUrl = `${window.location.pathname}?${params.toString()}`;
-	    window.history.replaceState({}, '', newUrl);
+            const params = new URLSearchParams(window.location.search);
+            params.set("startTime", startTime);
+            params.set("paceMin", paceMin);
+            params.set("paceSec", paceSec);
+            const newUrl = `${window.location.pathname}?${params.toString()}`;
+            window.history.replaceState({}, '', newUrl);
             const markersWithTimes = calculateEstimatedTimes(
                 routeData.markers, 
                 routeData.totalDistance, 
                 startTime,
-        	pace
+                pace
             );
             
             displayRoute(routeData.points, markersWithTimes);
